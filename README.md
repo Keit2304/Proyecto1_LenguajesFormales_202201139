@@ -1,2 +1,2 @@
-# Proyecto1_LenguajesFormales_202201139
-Keitlyn Valentina Tunchez Castañeda
+# Prueba2-PROYECTO1LFP
+Esta es la otra opcion de código del proyecto1
