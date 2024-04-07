@@ -4,55 +4,94 @@ from tkinter import filedialog
 import webbrowser
 import os
 
+
+lexemas = []
+errores = []
+
 class Lexema:
-    def __init__(self, tipo, valor):
+    def __init__(self, tipo, valor, columna, fila):
         self.tipo = tipo
         self.valor = valor
+        self.columna = columna
+        self.fila = fila
 
 class Error:
-    def __init__(self, mensaje):
+    def __init__(self, mensaje, columna, fila):
         self.mensaje = mensaje
+        self.columna = columna
+        self.fila = fila
         
 
 def analizadorLexico(textAreaInicial, textAreaFinal, reportArea):
-    lexemas = []
-    errores = []
+    
     caracteres_invalidos = ""
-    palabra = ""
    
     texto = textAreaInicial.get("1.0", "end")
     
+    palabra = ""
+    fila = 1
+    columna = 0
+    
+
+    # Obtenemos el texto del text area
+    texto = textAreaInicial.get("1.0", "end")
+    
+    # Iteramos sobre cada caracter del texto
     i = 0
     while i < len(texto):
         char = texto[i]
+        columna += 1
 
+
+        # Verificamos que el caracter sea una letra o un dígito
         if char.isalnum():
+            # Iteramos los caracteres para obtener la palabra completa
             while i < len(texto) and texto[i].isalnum():
                 palabra += texto[i]
                 i += 1
 
+            # Verificar si la palabra es una palabra reservada
             if palabra.lower() in ['doctype', 'html', 'head', 'title', 'body', 'h1', 'p', 'h2']:
-                lexemas.append(Lexema("PALABRA_RESERVADA", palabra.lower()))
+                lexemas.append(Lexema("PALABRA_RESERVADA", palabra.lower(), columna, fila))
             elif palabra.isdigit():
-                lexemas.append(Lexema("NUMERO", palabra))
+                lexemas.append(Lexema("NUMERO", palabra, columna, fila))
             else:
-                lexemas.append(Lexema("PALABRA", palabra))
+                lexemas.append(Lexema("PALABRA", palabra, columna, fila))
             palabra = ""
 
+        # Verificamos otros caracteres especiales
         elif char in [',']:
-            lexemas.append(Lexema("COMA", char))
+            lexemas.append(Lexema("COMA", char, columna, fila))
         elif char in ['.']:
-            lexemas.append(Lexema("PUNTO", char))
+            lexemas.append(Lexema("PUNTO", char, columna, fila))
         elif char in ['+', '-', '*', '/', '<', '>', '!']:
-            lexemas.append(Lexema("ESPECIAL", char))
+            lexemas.append(Lexema("ESPECIAL", char, columna, fila))
+        elif char == '"':  # Verificar si es un inicio de cadena
+            cadena = char
+            i += 1
+            columna += 1
+            while i < len(texto) and texto[i] != '"':
+                cadena += texto[i]
+                i += 1
+                columna += 1
+            if i < len(texto) and texto[i] == '"':  # Si encontramos el final de la cadena
+                cadena += '"'
+                lexemas.append(Lexema("CADENA", cadena, columna, fila))
+            else:  # Si no encontramos el final de la cadena, hay un error
+                errores.append(Error("Cadena sin cerrar", columna, fila))
+        # Ignoramos estos caracteres
         elif char in [' ', '\n', '\t', '\r']:
-            pass
+            if char == '\n':
+                fila += 1
+            columna = 0
         else:
-            errores.append(Error(f"Caracter no válido: {char}"))
-            caracteres_invalidos += char
+            errores.append(Error(char, columna, fila))
 
         i += 1
     
+    for lexema in lexemas:
+        print(f'Tipo: {lexema.tipo}, Valor: {lexema.valor}, Columna: {lexema.columna}, Fila: {lexema.fila}')
+
     imprimirLexemasYErrores(lexemas, errores, textAreaFinal)
     reportArea.delete("1.0", END)
     reportArea.insert(END, caracteres_invalidos)
@@ -395,11 +434,8 @@ def Traductor():
     textAreaFinal = Text(frm, width=50, height=25)
     textAreaFinal.grid(row=1, column=1, padx=10, pady=10)
 
-    reportLabel = ttk.Label(frm, text="Caracteres no válidos:")
-    reportLabel.grid(row=2, column=0, padx=10, pady=5)
-
     reportArea = Text(frm, width=50, height=5)
-    reportArea.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+    reportArea.grid(row=3, column=0, columnspan=2, padx=2, pady=1)
 
     buttonFrame = ttk.Frame(frm)
     buttonFrame.grid(row=4, column=0, columnspan=2, pady=10)
