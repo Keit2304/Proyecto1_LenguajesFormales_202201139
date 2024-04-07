@@ -118,130 +118,111 @@ def generarHTML(textAreaInicial):
         texto = texto.replace(char, '')
     return texto
 
-def abrirHTMLGenerado(textAreaInicial, textAreaFinal):
-    texto = textAreaInicial.get("1.0", "end")
-    html_contenido = "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Ejemplo título</title>\n</head>\n<body>\n<div>\n"
+def abrirHTMLGenerado(archivo_entrada):
+    # Abrir el archivo de entrada y leer su contenido
+    with open(archivo_entrada, 'r') as file:
+        lineas = file.readlines()
 
-    instrucciones = texto.split('\n')
+    # Iniciar el HTML generado
+    html_generado = '''
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ejemplo título</title>
+    </head>
+    <body>
+        <div>
+    '''
 
-    for instruccion in instrucciones:
-        if instruccion.strip() == 'Inicio:{' or instruccion.strip() == 'Cuerpo:[' or instruccion.strip() == '}':
+    # Procesar cada línea del archivo para generar el cuerpo del HTML
+    for linea in lineas:
+        # Eliminar espacios en blanco al inicio y al final de la línea
+        linea = linea.strip()
+        
+        # Ignorar líneas vacías
+        if not linea:
             continue
+        
+        # Procesar cada instrucción según su tipo
+        if linea.startswith("Inicio"):
+            # Si es el inicio, no hacemos nada especial
+            continue
+        elif linea.startswith("Encabezado"):
+            # Agregar el encabezado al HTML generado
+            titulo = obtener_valor(linea)
+            html_generado += f'<h1>{titulo}</h1>\n'
+        elif linea.startswith("Cuerpo"):
+            # Abrir un nuevo div para el cuerpo
+            html_generado += '<div>\n'
+        elif linea.startswith("Texto"):
+            # Agregar texto al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_valor(linea)
+            html_generado += f'<p style="{estilo}">{texto}</p>\n'
+        elif linea.startswith("Parrafo"):
+            # Agregar párrafo al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_valor(linea)
+            html_generado += f'<h2 style="{estilo}">{texto}</h2>\n'
+        elif linea.startswith("Titulo"):
+            # Agregar título al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_valor(linea)
+            html_generado += f'<h2 style="{estilo}">{texto}</h2>\n'
+        elif linea.startswith("Cursiva"):
+            # Agregar texto en cursiva al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_(linea)
+            html_generado += f'<div style="{estilo}">{texto}</div>\n'
+        elif linea.startswith("Tachado"):
+            # Agregar texto tachado al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_(linea)
+            html_generado += f'<del style="{estilo}">{texto}</del>\n'
+        elif linea.startswith("Subrayado"):
+            # Agregar texto subrayado al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_(linea)
+            html_generado += f'<div style="{estilo}">{texto}</div>\n'
+        elif linea.startswith("Negrita"):
+            # Agregar texto en negrita al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_(linea)
+            html_generado += f'<div style="{estilo}">{texto}</div>\n'
+        elif linea.startswith("Codigo"):
+            # Agregar texto con fuente de código al HTML generado
+            texto = obtener_valor(linea)
+            estilo = obtener_(linea)
+            html_generado += f'<pre style="{estilo}">{texto}</pre>\n'
+        elif linea.startswith("Fondo"):
+            # Establecer el color de fondo del HTML generado
+            color = obtener_valor(linea)
+            html_generado += f'<body style="background-color:{color};">\n'
+        else:
+            # Si no se reconoce la instrucción, imprimir un mensaje de advertencia
+            print("Instrucción no reconocida:", linea)
 
-        if instruccion.strip() == 'Encabezado:{' or instruccion.strip() == 'Texto:{':
-            html_contenido += "\t<div>\n"
-        elif instruccion.strip() == 'Parrafo:{':
-            html_contenido += "\t<p>\n"
-        elif instruccion.strip() == 'Titulo:{':
-            html_contenido += "\t<h2>\n"
-        elif instruccion.strip() == '},':
-            html_contenido += "\t</div>\n"
-        elif instruccion.strip() == '},':
-            html_contenido += "\t</p>\n"
-        elif instruccion.strip() == '},':
-            html_contenido += "\t</h2>\n"
-        elif ":" in instruccion:
-            propiedad, valor = instruccion.split(":")
-            propiedad = propiedad.strip()
-            valor = valor.strip()
+    # Cerrar el HTML generado
+    html_generado += '''
+        </div>
+    </body>
+    </html>
+    '''
 
-            if propiedad == 'Texto' and valor.startswith('{'):
-                estilo = ''
-                color = ''
-                fuente = ''
-                tamaño = ''
-                texto = ''
-                for v in valor[1:-1].split(';'):
-                    key, val = v.split(':')
-                    if key.strip() == 'texto':
-                        texto = val.strip('"')
-                    elif key.strip() == 'estilo':
-                        estilo = val.strip('"')
-                    elif key.strip() == 'color':
-                        color = val.strip('"')
-                    elif key.strip() == 'fuente':
-                        fuente = val.strip('"')
-                    elif key.strip() == 'tamaño':
-                        tamaño = val.strip('"')
-                
-                estilo_html = ''
-                if estilo == 'cursiva':
-                    estilo_html = 'font-style: italic;'
-                elif estilo == 'negrita':
-                    estilo_html = 'font-weight: bold;'
-                elif estilo == 'normal':
-                    estilo_html = ''
-                
-                color_html = f'color: {color};'
-                fuente_html = f'font-family: {fuente};'
-                tamaño_html = f'font-size: {tamaño}px;'
+    # Mostrar el HTML generado
+    print(html_generado)
 
-                html_contenido += f"\t\t<div style=\"{fuente_html} {color_html} {tamaño_html} {estilo_html}\">\n\t\t\t{texto}\n\t\t</div>\n"
 
-            elif propiedad == 'Parrafo' and valor.startswith('{'):
-                posicion = ''
-                color = ''
-                tamaño = ''
-                texto = ''
-                for v in valor[1:-1].split(';'):
-                    key, val = v.split(':')
-                    if key.strip() == 'texto':
-                        texto = val.strip('"')
-                    elif key.strip() == 'posicion':
-                        posicion = val.strip('"')
-                    elif key.strip() == 'color':
-                        color = val.strip('"')
-                    elif key.strip() == 'tamaño':
-                        tamaño = val.strip('"')
-                
-                posición_html = ''
-                if posicion == 'centro':
-                    posición_html = 'text-align: center;'
-                elif posicion == 'izquierda':
-                    posición_html = 'text-align: left;'
-                elif posicion == 'derecha':
-                    posición_html = 'text-align: right;'
-                
-                color_html = f'color: {color};'
-                tamaño_html = f'font-size: {tamaño}px;'
+def obtener_valor(linea):
+    # Función para obtener el valor de una instrucción
+    return linea.split(":")[1].strip().strip(';').strip('"')
 
-                html_contenido += f"\t\t<p style=\"{posición_html} {color_html} {tamaño_html}\">\n\t\t\t{texto}\n\t\t</p>\n"
+# Llamar a la función con el archivo de entrada
+archivo_entrada = "entrada.html"
+abrirHTMLGenerado(archivo_entrada)
 
-            elif propiedad == 'Titulo' and valor.startswith('{'):
-                posicion = ''
-                tamaño = ''
-                color = ''
-                texto = ''
-                for v in valor[1:-1].split(';'):
-                    key, val = v.split(':')
-                    if key.strip() == 'texto':
-                        texto = val.strip('"')
-                    elif key.strip() == 'posicion':
-                        posicion = val.strip('"')
-                    elif key.strip() == 'tamaño':
-                        tamaño = val.strip('"')
-                    elif key.strip() == 'color':
-                        color = val.strip('"')
-                
-                posición_html = ''
-                if posicion == 'centro':
-                    posición_html = 'text-align: center;'
-                elif posicion == 'izquierda':
-                    posición_html = 'text-align: left;'
-                elif posicion == 'derecha':
-                    posición_html = 'text-align: right;'
-                
-                tamaño_html = f'font-size: {tamaño}px;'
-                color_html = f'color: {color};'
-
-                html_contenido += f"\t\t<h2 style=\"{posición_html} {tamaño_html} {color_html}\">\n\t\t\t{texto}\n\t\t</h2>\n"
-
-    html_contenido += "</div>\n</body>\n</html>"
-
-    with open("html_generado.html", "w") as f:
-        f.write(html_contenido)
-
-    return "html_generado.html"
 
 
 def corregirHTMLGenerado(texto):
