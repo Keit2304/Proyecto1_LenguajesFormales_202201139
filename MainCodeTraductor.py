@@ -90,7 +90,7 @@ def analizadorLexico(textAreaInicial, textAreaFinal, reportArea):
         i += 1
     
     for lexema in lexemas:
-        print(f'Tipo: {lexema.tipo}, Valor: {lexema.valor}, Columna: {lexema.columna}, Fila: {lexema.fila}')
+        print(f'Tipo: {lexema.tipo}, Valor: {lexema.valor}, Columna: 1, Fila: {lexema.fila}')
 
     imprimirLexemasYErrores(lexemas, errores, textAreaFinal)
     reportArea.delete("1.0", END)
@@ -108,7 +108,7 @@ def cargarArchivo(textArea):
 
 def enviarTexto(textAreaInicial):
     texto = textAreaInicial.get("1.0", "end")
-    html_contenido = "<html><head><title>HTML Traducido</title></head><body><p>Este es el contenido traducido</p></body></html>"
+    html_contenido = "<html><head><h1>HTML Traducido</h1></head><body><p>Este es el contenido traducido</p></body></html>"
     return html_contenido
 
 def generarHTML(textAreaInicial):
