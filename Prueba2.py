@@ -4,57 +4,143 @@ from tkinter import filedialog
 import webbrowser
 import os
 
+lexemas = []
+errores = []
+caracteres_invalidos = "!¡@#%$\\[\\]{ }^&*()_+:;¿?<>,"
+
 class Lexema:
-    def __init__(self, tipo, valor):
+    def __init__(self, tipo, valor, columna, fila):
         self.tipo = tipo
         self.valor = valor
+        self.columna = columna
+        self.fila = fila
 
 class Error:
-    def __init__(self, mensaje):
+    def __init__(self, mensaje, columna, fila):
         self.mensaje = mensaje
+        self.columna = columna
+        self.fila = fila
         
+
 def analizadorLexico(textAreaInicial, textAreaFinal, reportArea):
-    lexemas = []
-    errores = []
-    caracteres_invalidos = ""
-    palabra = ""
+    global lexemas
+    global errores
+    global caracteres_invalidos
+
+    # Limpiamos las listas de lexemas y errores
+    lexemas.clear()
+    errores.clear()
    
     texto = textAreaInicial.get("1.0", "end")
     
+    palabra = ""
+    fila = 1
+    columna = 0
+    
+    # Obtenemos el texto del text area
+    texto = textAreaInicial.get("1.0", "end")
+    
+    # Iteramos sobre cada caracter del texto
     i = 0
     while i < len(texto):
         char = texto[i]
+        columna += 1
 
+        # Verificamos que el caracter sea una letra o un dígito
         if char.isalnum():
+            # Iteramos los caracteres para obtener la palabra completa
             while i < len(texto) and texto[i].isalnum():
                 palabra += texto[i]
                 i += 1
 
+            # Verificar si la palabra es una palabra reservada
             if palabra.lower() in ['doctype', 'html', 'head', 'title', 'body', 'h1', 'p', 'h2']:
-                lexemas.append(Lexema("PALABRA_RESERVADA", palabra.lower()))
+                lexemas.append(Lexema("PALABRA_RESERVADA", palabra.lower(), columna, fila))
             elif palabra.isdigit():
-                lexemas.append(Lexema("NUMERO", palabra))
+                lexemas.append(Lexema("NUMERO", palabra, columna, fila))
             else:
-                lexemas.append(Lexema("PALABRA", palabra))
+                lexemas.append(Lexema("PALABRA", palabra, columna, fila))
             palabra = ""
 
+        # Verificamos otros caracteres especiales
         elif char in [',']:
-            lexemas.append(Lexema("COMA", char))
+            lexemas.append(Lexema("COMA", char, columna, fila))
         elif char in ['.']:
-            lexemas.append(Lexema("PUNTO", char))
+            lexemas.append(Lexema("PUNTO", char, columna, fila))
         elif char in ['+', '-', '*', '/', '<', '>', '!']:
-            lexemas.append(Lexema("ESPECIAL", char))
+            lexemas.append(Lexema("ESPECIAL", char, columna, fila))
+        elif char == '"':  # Verificar si es un inicio de cadena
+            cadena = char
+            i += 1
+            columna += 1
+            while i < len(texto) and texto[i] != '"':
+                cadena += texto[i]
+                i += 1
+                columna += 1
+            if i < len(texto) and texto[i] == '"':  # Si encontramos el final de la cadena
+                cadena += '"'
+                lexemas.append(Lexema("CADENA", cadena, columna, fila))
+            else:  # Si no encontramos el final de la cadena, hay un error
+                errores.append(Error("Cadena sin cerrar", columna, fila))
+        # Ignoramos estos caracteres
         elif char in [' ', '\n', '\t', '\r']:
-            pass
+            if char == '\n':
+                fila += 1
+            columna = 0
         else:
-            errores.append(Error(f"Caracter no válido: {char}"))
-            caracteres_invalidos += char
+            errores.append(Error(char, columna, fila))
 
         i += 1
     
     imprimirLexemasYErrores(lexemas, errores, textAreaFinal)
-    reportArea.delete("1.0", END)
-    reportArea.insert(END, caracteres_invalidos)
+    generarTablaErrores(errores)
+    generarTablaLexemas(lexemas)
+    reportArea.delete("1.0", END)  # Limpiar el área de texto
+    reportArea.insert(END, f"Caracteres no válidos: {caracteres_invalidos}")
+
+
+def generarTablaErrores(errores):
+    if errores:
+        # Abre el archivo HTML en modo escritura
+        with open("tabla_errores.html", "w", encoding="utf-8") as f:
+            # Escribe el encabezado del archivo HTML
+            f.write("<!DOCTYPE html>\n")
+            f.write(f'<html lang="es">\n')
+            f.write("<head>\n")
+            f.write("<title>Tabla de Errores</title>\n")
+            f.write("</head>\n")
+            f.write("<body>\n")
+            f.write("<h1>Tabla de Errores</h1>\n")
+            
+            # Escribe la tabla HTML
+            f.write("<table border='1'>\n")
+            f.write("<tr><th>Caracter</th><th>Fila</th><th>Columna</th></tr>\n")
+            
+            # Escribe cada fila de la tabla con la información de los errores
+            for error in errores:
+                f.write(f"<tr><td>{error.mensaje}</td><td>{error.fila}</td><td>{error.columna}</td></tr>\n")
+            
+            # Cierra la tabla y el archivo HTML
+            f.write("</table>\n")
+            f.write("</body>\n")
+            f.write("</html>\n")
+
+def generarTablaLexemas(lexemas):
+    with open("tabla_lexemas.html", "w", encoding="utf-8") as f:
+        f.write("<!DOCTYPE html>\n")
+        f.write(f'<html lang="es">\n')
+        f.write("<head>\n")
+        f.write("<title>Tabla de Lexemas</title>\n")
+        f.write("</head>\n")
+        f.write("<body>\n")
+        f.write("<h1>Tabla de Lexemas</h1>\n")
+        f.write("<table border='1'>\n")
+        f.write("<tr><th>Token</th><th>Lexema</th><th>Fila</th><th>Columna</th></tr>\n")
+        for lexema in lexemas:
+            f.write(f"<tr><td>{lexema.tipo}</td><td>{lexema.valor}</td><td>{lexema.fila}</td><td>{lexema.columna}</td></tr>\n")
+        f.write("</table>\n")
+        f.write("</body>\n")
+        f.write("</html>\n")
 
 def cargarArchivo(textArea):
     archivo = filedialog.askopenfilename(filetypes=[("Archivo de texto", "*.txt, *.html")])
@@ -200,6 +286,7 @@ def Traductor():
 
     reportArea = Text(frm, width=50, height=5)
     reportArea.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+    reportArea.insert(END, f"Caracteres no válidos: {caracteres_invalidos}")
 
     buttonFrame = ttk.Frame(frm)
     buttonFrame.grid(row=4, column=0, columnspan=2, pady=10)
@@ -208,7 +295,6 @@ def Traductor():
     ttk.Button(buttonFrame, text="Traducir", command=lambda: analizadorLexico(textAreaInicial, textAreaFinal, reportArea)).grid(row=0, column=1, padx=5, pady=5)
     ttk.Button(buttonFrame, text="Abrir HTML Generado", command=lambda: abrirHTMLGenerado(textAreaInicial, textAreaFinal)).grid(row=0, column=2, padx=5, pady=5)
     ttk.Button(buttonFrame, text="Regresar", command=root.destroy).grid(row=0, column=3, padx=5, pady=5)
-
     root.mainloop()
 
 def imprimirLexemasYErrores(lexemas, errores, textAreaFinal):
