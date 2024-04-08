@@ -156,7 +156,7 @@ def enviarTexto(textAreaInicial):
     texto = textAreaInicial.get("1.0", "end")
     # Aquí deberías enviar el texto al servidor y obtener el código HTML traducido
     # Supongamos que la variable html_contenido contiene el código HTML traducido
-    html_contenido = "<html><head><title>HTML Traducido</title></head><body><p>Este es el contenido traducido</p></body></html>"
+    html_contenido = ""
     return html_contenido
 
 def generarHTML(textAreaInicial):
@@ -171,11 +171,15 @@ def abrirHTMLGenerado(textAreaInicial, textAreaFinal):
     texto = textAreaInicial.get("1.0", "end")
     # Corregir el HTML generado
     html_corregido = corregirHTMLGenerado(texto)
+    # Guardar el HTML generado en un archivo
+    with open("HTML_Generado.html", "w", encoding="utf-8") as f:
+        f.write(html_corregido)
     # Mostrar el HTML corregido en el textAreaFinal
     textAreaFinal.delete("1.0", END)
     textAreaFinal.insert(END, html_corregido)
 
-def generar_estilo(propiedad, valor):
+
+def generar_estilo(lexemas, propiedad, valor):
     if propiedad == "fuente":
         return f"font-family: {valor}; "
     elif propiedad == "color":
@@ -204,62 +208,34 @@ def generar_estilo(propiedad, valor):
 
 
 def corregirHTMLGenerado(texto):
-    # Separar el texto en bloques de elementos
     bloques = texto.split('},')
-
-    html = "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Ejemplo título</title>\n</head>\n<body>\n\t<div>\n\t\t<h1>Ejemplo título</h1>\n"
+    html = "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Ejemplo titulo</title>\n</head>\n<body>\n\t<div>\n\t\t<h1>Ejemplo título</h1>\n"
 
     for bloque in bloques:
         elementos = bloque.split(',')
 
-        etiqueta = elementos[0].split(':')[-1].strip().capitalize()
-
-        html += f"\t\t<div>\n\t\t<{etiqueta} style=\""
-
-        for elemento in elementos[1:]:
+        for elemento in elementos:
             partes = elemento.split(':')
             propiedad = partes[0].strip()
             valor = partes[1].strip().strip('"')
 
-            if propiedad == "texto":
-                html += f">{valor}</{etiqueta}>\n\t\t</div>\n\t\t<div>\n\t\t<{etiqueta} style=\""
-            else:
-                html += generar_estilo(propiedad, valor)
-
-        html += "\t\t</div>\n"
+            if propiedad == "Inicio":
+                continue  # No hacemos nada con la etiqueta "Inicio"
+            elif propiedad == "Encabezado":
+                html += "\t\t<div>\n\t\t\t<h1>" + valor + "</h1>\n\t\t</div>\n"
+            elif propiedad == "Cuerpo":
+                html += "\t\t<div>\n"
+                for subelemento in valor.split(';'):
+                    if ':' in subelemento:  # Comprobamos si ':' está presente en subelemento
+                        etiqueta, estilo = subelemento.split(':')
+                        etiqueta = etiqueta.strip().capitalize()
+                        estilo = estilo.strip().strip('"')
+                        html += f"\t\t\t<{etiqueta} style=\"{generar_estilo(estilo)}\">Contenido de {etiqueta}</{etiqueta}>\n"
+                html += "\t\t</div>\n"
 
     html += "</body>\n</html>"
-    
     return html
 
-
-texto = '''Inicio:{
-    Encabezado:{
-        TituloPagina:"Ejemplo titulo";
-    },
-    Cuerpo:[
-        Texto:{
-            fuente:"Arial";
-            color:"azul";
-            tamaño:"11";
-            estilo:"normal";
-        },
-        Cursiva:{
-            texto:"Este es un texto en cursiva.";
-            color:"azul";
-        },
-        Fondo:{
-            color:"#FFA07A";
-        },
-        Tachado:{
-            texto:"Este es un texto tachado.";
-            color:"rojo";
-        }
-    ]
-}'''
-
-html_corregido = corregirHTMLGenerado(texto)
-print(html_corregido) 
 
 
 def Traductor():
